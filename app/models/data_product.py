@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Text, ForeignKey, Date, BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from pydantic import BaseModel, Field
@@ -38,15 +38,31 @@ class DataProduct(Base):
     __tablename__ = "data_and_product"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    description = Column(Text)
-    file_path = Column(String(255))
-    file_type = Column(String(50))
-    size = Column(Float)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    is_active = Column(Boolean, default=True)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    crop_type = Column(String(30))
+    satellite = Column(String(50))
+    time_interval = Column(String(50))
+    season = Column(String(200))
+    from_date = Column(Date)
+    to_date = Column(Date)
+    calibration = Column(String(50))
+    status = Column(String(50))
+    active = Column(Boolean)  # Using Boolean instead of tinyint
+    created_by = Column(Integer, ForeignKey("user.id"))
+    created_on = Column(DateTime, default=func.now())
+    job_id = Column(Integer)
+    direction = Column(String(100))
+    input_path = Column(String(2000))
+    vv_output_path = Column(String(2000))
+    polarization = Column(String(100))
+    category = Column(String(100))
+    coordinates = Column(String(3000))
+    bands = Column(Integer)
+    request_type = Column(Integer)
+    vh_output_path = Column(String(2000))
+    crop_id = Column(Integer)
+    area = Column(BigInteger)
+    perimeter = Column(BigInteger)
+    extent = Column(String(2000))
     
     # Relationships
     user = relationship("User")
