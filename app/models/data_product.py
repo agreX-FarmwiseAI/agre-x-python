@@ -213,8 +213,7 @@ class DataProductResponse(DataProductBase):
     file_path: Optional[str] = None
     size: Optional[float] = None
     created_at: datetime
-    updated_at: 
-        datetime
+    updated_at: datetime
     is_active: bool
     user_id: int
     
