@@ -6,11 +6,12 @@ from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models.analysis import (
     Crop, CropCreate, CropResponse,
-    Satellite, SatelliteCreate, SatelliteResponse, SatelliteDetail,
+    SatelliteCreate, SatelliteResponse, SatelliteDetail,
     Polarization, PolarizationCreate, PolarizationResponse,
     Calibration, CalibrationCreate, CalibrationResponse,
     MaskNoise, MaskNoiseCreate, MaskNoiseResponse
 )
+from app.models.data_product import Satellite
 from app.models.user import User
 from app.core.exceptions import ResourceNotFoundException
 

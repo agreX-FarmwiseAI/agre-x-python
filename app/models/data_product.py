@@ -111,10 +111,14 @@ class Satellite(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(20))
-    is_premium = Column(Boolean)
+    is_premiun = Column(Boolean)
     active = Column(Boolean, default=True)
     created_by = Column(String(30))
     created_on = Column(DateTime, default=func.now())
+    
+    # Relationships
+    calibration = relationship("Calibration", back_populates="satellite")
+    polarization = relationship("Polarization", back_populates="satellite")
 
 
 # Pydantic models for API
@@ -224,3 +228,27 @@ class DataProductDetailResponse(DataProductResponse):
     
     class Config:
         from_attributes = True
+        
+class DataProductRequest(BaseModel):
+    crop_type: str
+    satellite: str
+    time_interval: str
+    season: str
+    from_date: date
+    to_date: date
+    calibration: str
+    status: str = "pending"
+    active: bool = True
+    created_by: int
+    job_id: int
+    direction: str
+    input_path: str
+    polarization: str
+    category: str
+    coordinates: str
+    bands: int
+    request_type: int
+    crop_id: int
+    
+    class Config:
+        orm_mode = True

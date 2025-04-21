@@ -10,7 +10,7 @@ from app.models.data_product import (
     DataProduct, DataProductCreate, DataProductUpdate, DataProductResponse,
     DataProductDetailResponse, Category, CategoryCreate, CategoryResponse,
     Product, ProductCreate, ProductResponse, DPBlocks, DPBlocksCreate,
-    DPMaskNoise, DPMaskNoiseCreate, Satellite
+    DPMaskNoise, DPMaskNoiseCreate, Satellite, DataProductRequest
 )
 from app.models.user import User
 from app.core.exceptions import ResourceNotFoundException
@@ -18,6 +18,30 @@ from app.core.config import settings
 
 router = APIRouter()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class PythonService(threading.Thread):
+    def __init__(self, args, script_path):
+        threading.Thread.__init__(self)
+        self.args = args
+        self.script_path = script_path
+        
+    def run(self):
+        try:
+            cmd = [self.script_path] + self.args
+            logger.info(f"Executing command: {' '.join(cmd)}")
+            subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            logger.info("Script execution initiated")
+        except Exception as e:
+            logger.error(f"Error executing script: {e}")
+
+def get_model_output_path(crop_id: int, db: Session):
+    # This would implement the logic of getModelOutputPath in the Java code
+    crop = db.query(DataProduct).filter(DataProduct.crop_id == crop_id).first()
+    if crop:
+        return f"/output/path/for/crop/{crop_id}"
+    return "/default/output/path"
 
 @router.post("/", response_model=DataProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_data_product(
@@ -38,6 +62,15 @@ async def create_data_product(
     db.commit()
     db.refresh(db_data_product)
     return db_data_product
+
+@router.get("/getSatellite")
+def get_satellite(
+    db: Session = Depends(get_db),
+):
+    """
+    getSatellite function
+    """
+    return db.query(Satellite).all()
 
 
 @router.post("/upload/{data_product_id}", response_model=DataProductResponse)
@@ -335,11 +368,76 @@ async def create_dp_mask_noise(
     db.refresh(db_mask_noise)
     return db_mask_noise
 
-@router.get("/getSatellite")
-def get_satellite(
-    db: Session = Depends(get_db),
-):
-    """
-    getSatellite function
-    """
-    return db.query(Satellite).all()
+@router.post("/download", status_code=201)
+def download_dp(dp_request: DataProductRequest, db: Session = Depends(get_db)):
+    try:
+        dp = DataProduct(
+            crop_type=dp_request.crop_type,
+            satellite=dp_request.satellite,
+            time_interval=dp_request.time_interval,
+            season=dp_request.season,
+            from_date=dp_request.from_date,
+            to_date=dp_request.to_date,
+            calibration=dp_request.calibration,
+            status=dp_request.status,
+            active=dp_request.active,
+            created_by=dp_request.created_by,
+            created_on=datetime.now(),
+            job_id=dp_request.job_id,
+            direction=dp_request.direction,
+            input_path=dp_request.input_path,
+            polarization=dp_request.polarization,
+            category=dp_request.category,
+            coordinates=dp_request.coordinates,
+            bands=dp_request.bands,
+            request_type=dp_request.request_type,
+            crop_id=dp_request.crop_id
+        )
+        
+        db.add(dp)
+        db.commit()
+        db.refresh(dp)
+        logger.info(f"After saved to database: {dp.id}")
+        
+        dp_req_arg_list = []
+        dp_req_arg_list.append(str(dp.created_by))
+        dp_req_arg_list.append(str(dp.job_id))
+        
+        from_date_formatted = dp.from_date.strftime("%Y-%m-%d")
+        to_date_formatted = dp.to_date.strftime("%Y-%m-%d")
+        logger.info(f"From date: {from_date_formatted}")
+        logger.info(f"To date: {to_date_formatted}")
+        
+        dp_req_arg_list.append(from_date_formatted)
+        dp_req_arg_list.append(to_date_formatted)
+        dp_req_arg_list.append(dp.input_path)
+        dp_req_arg_list.append("GRD")
+        
+        if dp.request_type == 2:
+            dp_req_arg_list.append(dp.crop_type)
+        else:
+            dp_req_arg_list.append("Rice")
+        
+        dp_req_arg_list.append(str(dp.request_type))
+        logger.info(f"REQUEST TYPE: {dp.request_type}")
+        
+        if dp.request_type == 2:
+            logger.info("GETTING MODEL OUTPUT PATH")
+            dp_req_arg_list.append(get_model_output_path(dp.crop_id, db))
+        else:
+            dp_req_arg_list.append("path")
+        
+        logger.info(f"Arguments for script: {dp_req_arg_list}")
+        
+        script_path = "/home/ubuntu/AgriX-Api/Crop_Analyser/data_and_product.sh"
+        
+        python_service = PythonService(dp_req_arg_list, script_path)
+        python_service.start()
+        
+        logger.info(f"Executed Analysis For user_id - {dp.created_by} job_id - {dp.job_id} product_type - {dp.crop_type}")
+        
+        return {"success": True, "message": "Data product processing initiated"}
+    
+    except Exception as ex:
+        logger.error(f"Error in download data products: {ex}")
+        raise HTTPException(status_code=500, detail=f"Failed to process data product: {str(ex)}")

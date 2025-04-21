@@ -22,17 +22,17 @@ class Crop(Base):
     calibration = relationship("Calibration", back_populates="crop")
 
 
-class Satellite(Base):
-    __tablename__ = "satellite"
+# class Satellite(Base):
+#     __tablename__ = "satellite"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    description = Column(Text)
-    resolution = Column(Float)  # in meters
+#     id = Column(Integer, primary_key=True, index=True)
+#     name = Column(String(100), nullable=False)
+#     description = Column(Text)
+#     resolution = Column(Float)  # in meters
     
-    # Relationships
-    calibration = relationship("Calibration", back_populates="satellite")
-    polarization = relationship("Polarization", back_populates="satellite")
+#     # Relationships
+#     calibration = relationship("Calibration", back_populates="satellite")
+#     polarization = relationship("Polarization", back_populates="satellite")
 
 
 class Polarization(Base):
