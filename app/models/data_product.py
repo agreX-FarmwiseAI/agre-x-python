@@ -150,8 +150,8 @@ class ProductCreate(ProductBase):
 
 class ProductResponse(ProductBase):
     id: int
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+    created_at: datetime
+    updated_at: datetime
     category: CategoryResponse
     
     class Config:
@@ -212,8 +212,9 @@ class DataProductResponse(DataProductBase):
     id: int
     file_path: Optional[str] = None
     size: Optional[float] = None
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+    created_at: datetime
+    updated_at: 
+        datetime
     is_active: bool
     user_id: int
     
