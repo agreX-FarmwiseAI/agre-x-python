@@ -90,6 +90,16 @@ class DPProduct(Base):
     data_and_product = relationship("DataProduct")
     product = relationship("Product")
 
+class Satellite(Base):
+    __tablename__ = "satellite"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(20))
+    is_premium = Column(Boolean)
+    active = Column(Boolean, default=True)
+    created_by = Column(String(30))
+    created_on = Column(DateTime, default=func.now())
+
 
 # Pydantic models for API
 class CategoryBase(BaseModel):

@@ -11,7 +11,7 @@ from app.models.data_product import (
     DataProduct, DataProductCreate, DataProductUpdate, DataProductResponse,
     DataProductDetailResponse, Category, CategoryCreate, CategoryResponse,
     Product, ProductCreate, ProductResponse, DPBlocks, DPBlocksCreate,
-    DPMaskNoise, DPMaskNoiseCreate
+    DPMaskNoise, DPMaskNoiseCreate, Satellite
 )
 from app.models.user import User
 from app.core.exceptions import ResourceNotFoundException
@@ -339,3 +339,12 @@ async def create_dp_mask_noise(
     db.commit()
     db.refresh(db_mask_noise)
     return db_mask_noise
+
+@router.get("/getSatellite")
+def get_satellite(
+    db: Session = Depends(get_db),
+):
+    """
+    getSatellite function
+    """
+    return db.query(Satellite).all()
