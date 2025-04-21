@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from pydantic import BaseModel, Field
 from typing import Optional, List
-import datetime
+from datetime import datetime, date
 
 from app.core.database import Base
 
