@@ -6,7 +6,6 @@ import os
 import shutil
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user
 from app.models.data_product import (
     DataProduct, DataProductCreate, DataProductUpdate, DataProductResponse,
     DataProductDetailResponse, Category, CategoryCreate, CategoryResponse,
@@ -22,9 +21,9 @@ router = APIRouter()
 
 @router.post("/", response_model=DataProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_data_product(
+    user_id:int,
     data_product: DataProductCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Create a new data product
@@ -33,7 +32,7 @@ async def create_data_product(
         name=data_product.name,
         description=data_product.description,
         file_type=data_product.file_type,
-        user_id=current_user.id
+        user_id=user_id
     )
     db.add(db_data_product)
     db.commit()
@@ -43,10 +42,10 @@ async def create_data_product(
 
 @router.post("/upload/{data_product_id}", response_model=DataProductResponse)
 async def upload_data_product_file(
+    user_id: int,
     data_product_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Upload a file for a data product
@@ -56,14 +55,14 @@ async def upload_data_product_file(
     if not data_product:
         raise ResourceNotFoundException("DataProduct", data_product_id)
     
-    if data_product.user_id != current_user.id:
+    if data_product.created_by != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this data product"
         )
     
     # Create upload directory if it doesn't exist
-    upload_dir = os.path.join(settings.UPLOAD_FOLDER, f"user_{current_user.id}")
+    upload_dir = os.path.join(settings.UPLOAD_FOLDER, f"user_{user_id}")
     os.makedirs(upload_dir, exist_ok=True)
     
     # Save file
@@ -83,8 +82,8 @@ async def upload_data_product_file(
 
 @router.get("/", response_model=List[DataProductResponse])
 async def get_data_products(
+    user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
     skip: int = 0,
     limit: int = 100
 ):
@@ -92,7 +91,7 @@ async def get_data_products(
     Get all data products for the current user
     """
     data_products = db.query(DataProduct).filter(
-        DataProduct.user_id == current_user.id
+        DataProduct.created_by == user_id
     ).offset(skip).limit(limit).all()
     
     return data_products
@@ -101,8 +100,7 @@ async def get_data_products(
 @router.get("/{data_product_id}", response_model=DataProductDetailResponse)
 async def get_data_product(
     data_product_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Get a data product by ID
@@ -117,9 +115,9 @@ async def get_data_product(
 @router.put("/{data_product_id}", response_model=DataProductResponse)
 async def update_data_product(
     data_product_id: int,
+    user_id:int,
     data_product_update: DataProductUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Update a data product
@@ -128,7 +126,7 @@ async def update_data_product(
     if not data_product:
         raise ResourceNotFoundException("DataProduct", data_product_id)
     
-    if data_product.user_id != current_user.id:
+    if data_product.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this data product"
@@ -149,9 +147,9 @@ async def update_data_product(
 
 @router.delete("/{data_product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_data_product(
+    user_id :int,
     data_product_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Delete a data product
@@ -160,7 +158,7 @@ async def delete_data_product(
     if not data_product:
         raise ResourceNotFoundException("DataProduct", data_product_id)
     
-    if data_product.user_id != current_user.id:
+    if data_product.created_by != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this data product"
@@ -179,8 +177,7 @@ async def delete_data_product(
 @router.get("/download/{data_product_id}")
 async def download_data_product(
     data_product_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Download a data product file
@@ -205,8 +202,7 @@ async def download_data_product(
 @router.post("/categories", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     category: CategoryCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Create a new category
@@ -237,8 +233,7 @@ async def get_categories(
 @router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product: ProductCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Create a new product
@@ -279,9 +274,9 @@ async def get_products(
 
 @router.post("/blocks", response_model=DPBlocksCreate, status_code=status.HTTP_201_CREATED)
 async def create_dp_blocks(
+    user_id : int,
     blocks: DPBlocksCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Create blocks for a data product
@@ -292,7 +287,7 @@ async def create_dp_blocks(
         raise ResourceNotFoundException("DataProduct", blocks.data_product_id)
     
     # Check if user is authorized
-    if data_product.user_id != current_user.id:
+    if data_product.created_by != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this data product"
@@ -311,9 +306,9 @@ async def create_dp_blocks(
 
 @router.post("/mask-noise", response_model=DPMaskNoiseCreate, status_code=status.HTTP_201_CREATED)
 async def create_dp_mask_noise(
+    user_id: int,
     mask_noise: DPMaskNoiseCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
     """
     Create mask noise for a data product
@@ -324,7 +319,7 @@ async def create_dp_mask_noise(
         raise ResourceNotFoundException("DataProduct", mask_noise.data_product_id)
     
     # Check if user is authorized
-    if data_product.user_id != current_user.id:
+    if data_product.created_by != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this data product"

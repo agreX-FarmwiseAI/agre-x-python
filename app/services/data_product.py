@@ -81,7 +81,7 @@ class DataProductService:
     ) -> List[DataProduct]:
         """Get all data products for a user"""
         return db.query(DataProduct).filter(
-            DataProduct.user_id == current_user.id
+            DataProduct.created_by == current_user.id
         ).offset(skip).limit(limit).all()
 
     @staticmethod

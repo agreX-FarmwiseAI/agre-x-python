@@ -237,3 +237,4 @@ async def get_mask_noise(
     """
     mask_noise_entries = db.query(MaskNoise).offset(skip).limit(limit).all()
     return mask_noise_entries
+
